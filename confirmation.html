@@ -109,6 +109,7 @@
         nav {
             display: flex;
             gap: 25px;
+            align-items: center;
         }
         
         nav a {
@@ -532,6 +533,58 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Debug Console */
+        .debug-console {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #f3f4f6;
+            border-top: 2px solid #e5e7eb;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+        
+        .debug-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #6b21a8;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .debug-console.visible {
+            display: block;
+        }
+        
+        .debug-entry {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .debug-entry.error {
+            color: #ef4444;
+        }
+        
+        .debug-entry.success {
+            color: #10b981;
+        }
     </style>
 </head>
 <body>
@@ -709,7 +762,7 @@
             <p>Thank you for your purchase. Your order number is <strong id="order-number">DBLC-12345</strong>. You will receive a confirmation email shortly.</p>
             <div class="modal-actions">
                 <a href="index.html" class="btn btn-outline">Continue Shopping</a>
-                <a href="confirmation.html" class="btn">View Order Details</a>
+                <a href="#" id="view-order-details" class="btn">View Order Details</a>
             </div>
         </div>
     </div>
@@ -731,15 +784,40 @@
         </div>
     </footer>
 
+    <!-- Debug Console -->
+    <div class="debug-console" id="debug-console">
+        <div class="debug-entry">Debug console initialized. Ready to track issues.</div>
+    </div>
+    <div class="debug-toggle" id="debug-toggle">
+        <i class="fas fa-bug"></i>
+    </div>
+
     <!-- Scripts -->
     <script>
+        // Debugging functions
+        function debugLog(message, type = 'info') {
+            const debugConsole = document.getElementById('debug-console');
+            const entry = document.createElement('div');
+            entry.className = `debug-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugConsole.appendChild(entry);
+            debugConsole.scrollTop = debugConsole.scrollHeight;
+            console.log(`[DEBUG] ${message}`);
+        }
+
         // Initialize cart
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
         document.getElementById('cart-count').textContent = cart.length;
+        debugLog(`Cart initialized with ${cart.length} items`);
         
         // Mobile menu toggle
         document.querySelector('.mobile-menu-toggle').addEventListener('click', function() {
             document.querySelector('.desktop-nav').classList.toggle('active');
+        });
+
+        // Debug toggle
+        document.getElementById('debug-toggle').addEventListener('click', function() {
+            document.getElementById('debug-console').classList.toggle('visible');
         });
         
         // Render order summary
@@ -783,6 +861,8 @@
             summarySubtotal.textContent = `KES ${subtotal}`;
             summaryShipping.textContent = shipping === 0 ? 'FREE' : `KES ${shipping}`;
             summaryTotal.textContent = `KES ${total}`;
+
+            debugLog(`Order summary rendered. Subtotal: KES ${subtotal}, Shipping: ${shipping === 0 ? 'FREE' : 'KES ' + shipping}, Total: KES ${total}`);
         }
         
         // Payment method selection
@@ -808,12 +888,15 @@
                 if (this.dataset.method === 'mpesa') {
                     mpesaDetails.style.display = 'block';
                     cardDetails.style.display = 'none';
+                    debugLog('M-Pesa payment method selected');
                 } else if (this.dataset.method === 'card') {
                     mpesaDetails.style.display = 'none';
                     cardDetails.style.display = 'block';
+                    debugLog('Credit card payment method selected');
                 } else {
                     mpesaDetails.style.display = 'none';
                     cardDetails.style.display = 'none';
+                    debugLog('Cash on delivery payment method selected');
                 }
             });
         });
@@ -826,6 +909,7 @@
         
         checkoutForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            debugLog('Form submission started');
             
             let isValid = true;
             
@@ -836,6 +920,7 @@
                 if (!field.value.trim()) {
                     formGroup.classList.add('error');
                     isValid = false;
+                    debugLog(`Validation error: ${field.id} is required`, 'error');
                 } else {
                     formGroup.classList.remove('error');
                 }
@@ -845,6 +930,7 @@
             if (!paymentMethodInput.value) {
                 paymentError.style.display = 'block';
                 isValid = false;
+                debugLog('Validation error: Payment method not selected', 'error');
             } else {
                 paymentError.style.display = 'none';
             }
@@ -855,10 +941,13 @@
             if (emailField.value && !emailRegex.test(emailField.value)) {
                 emailField.closest('.form-group').classList.add('error');
                 isValid = false;
+                debugLog('Validation error: Invalid email format', 'error');
             }
             
             // If form is valid, process order
             if (isValid) {
+                debugLog('Form validation passed. Processing order...');
+                
                 // Show loading state
                 btnText.style.display = 'none';
                 btnSpinner.style.display = 'block';
@@ -878,29 +967,36 @@
                         
                         // Clear cart
                         localStorage.removeItem('cart');
+                        debugLog('Order processed successfully. Cart cleared.', 'success');
                     }, 1500);
                     
                 } catch (error) {
+                    debugLog(`Order processing error: ${error.message}`, 'error');
                     alert('There was an error processing your order. Please try again.');
-                    console.error('Order processing error:', error);
                 } finally {
                     // Reset button state
                     btnText.style.display = 'block';
                     btnSpinner.style.display = 'none';
                     placeOrderBtn.disabled = false;
                 }
+            } else {
+                debugLog('Form validation failed. Please check all required fields.', 'error');
             }
         });
         
         // Simulate order processing
         function processOrder() {
             return new Promise((resolve, reject) => {
+                debugLog('Order processing started...');
+                
                 // Simulate network delay
                 setTimeout(() => {
                     // Simulate random success (90% success rate for demo)
                     if (Math.random() > 0.1) {
+                        debugLog('Order processing completed successfully', 'success');
                         resolve({ success: true });
                     } else {
+                        debugLog('Order processing failed: Payment declined', 'error');
                         reject(new Error('Payment processing failed'));
                     }
                 }, 2000);
@@ -913,6 +1009,7 @@
             input.addEventListener('blur', function() {
                 if (this.hasAttribute('required') && !this.value.trim()) {
                     this.closest('.form-group').classList.add('error');
+                    debugLog(`Field validation: ${this.id} is required`, 'error');
                 } else {
                     this.closest('.form-group').classList.remove('error');
                 }
@@ -922,9 +1019,18 @@
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                     if (!emailRegex.test(this.value)) {
                         this.closest('.form-group').classList.add('error');
+                        debugLog(`Field validation: ${this.id} has invalid email format`, 'error');
                     }
                 }
             });
+        });
+
+        // Handle view order details button
+        document.getElementById('view-order-details').addEventListener('click', function(e) {
+            e.preventDefault();
+            const orderNumber = document.getElementById('order-number').textContent;
+            debugLog(`Redirecting to order details for: ${orderNumber}`);
+            window.location.href = `confirmation.html?order=${orderNumber}`;
         });
         
         // Initial render
@@ -932,7 +1038,11 @@
         
         // If cart is empty, redirect to shop page
         if (cart.length === 0) {
+            debugLog('Cart is empty. Redirecting to shop page.', 'error');
+            alert('Your cart is empty. Adding some products before checkout.');
             window.location.href = 'shop.html';
+        } else {
+            debugLog('Checkout page loaded successfully');
         }
     </script>
 </body>
