@@ -24,7 +24,7 @@ const products = [
     { 
         id: 5, 
         name: "Rapid Hair Growth Oil", 
-        price: 600, 
+        price: 800, 
         image: "images/rapid-hair-growth-oil.png",
         description: "Quenches, feeds, and maintains healthy hair growth."
     },
@@ -38,7 +38,7 @@ const products = [
     { 
         id: 7, 
         name: "Beard Oil", 
-        price: 600, 
+        price: 1050, 
         image: "images/beard-oil.png",
         description: "Smoothens and adds shine for fuller, healthy beard growth."
     },
